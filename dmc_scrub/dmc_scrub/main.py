@@ -5,25 +5,17 @@ import torch.nn.functional as F
 from torch.nn.functional import pairwise_distance
 from sklearn.base import BaseEstimator
 
-from torch_functions import DEBIASM_train_and_pred
+from .torch_functions import DEBIASM_train_and_pred
 
 from torch.nn.functional import cross_entropy
 
 import torch.nn.functional as F
 
-
-def c_scrub_transform(self, x, p):
-    batch_inds, x = x[:, 0], x[:, 1:]
-
-    x = F.normalize( torch.pow(2, self.batch_weights[batch_inds.long()] ) * x, p=1 )
+import logging
+logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)
+logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
 
 
-    x -= ( torch.cat([ self.C_SCRuB_Layers[str(batch)].gamma.unsqueeze(0)
-                                            for batch in batch_inds.long() ], 
-                                dim=0 ) * ( 1 - p ) )
-
-    x = F.normalize( F.relu(x), p=1 )
-    return(x)
 
 def batch_weight_feature_and_nbatchpairs_scaling(strength, df_with_batch):
     nbs = df_with_batch.iloc[:, 0].nunique()
@@ -36,22 +28,13 @@ class DMC_SCRuB_Classifier(BaseEstimator):
                  *, 
                  batch_str = 'infer',
                  learning_rate=0.005, 
-                 min_epochs=25,
+                 min_epochs=50,
                  l2_strength=0,
                  w_l2=0,
                  random_state=None,
                  x_val=0,
                  mu_val=0,
                  prediction_loss=cross_entropy,
-                 ### C-SCRuB params below
-                 lambda1=1e3, 
-                 lambda2=1e2, 
-                 lr=0.05,
-                 optimizer=torch.optim.Adam, 
-                 patience=5, 
-                 min_delta = 1e-3,
-                 min_iter=500,
-                 max_iter=10000
                  ):
         
         self.learning_rate=learning_rate
@@ -63,6 +46,8 @@ class DMC_SCRuB_Classifier(BaseEstimator):
         self.mu_val = mu_val
         self.random_state=random_state
         self.prediction_loss=prediction_loss
+#         self.lambda2=lambda2
+#         self.lambda1=lambda1
         
     def fit(self, X, y, mu, sample_weight=None):
         """Fit the baseline classifier.
@@ -80,6 +65,7 @@ class DMC_SCRuB_Classifier(BaseEstimator):
         self.classes_ = np.unique(y)
         self.num_classes_ = self.classes_.shape[0]
         
+        
         preds, mod, val_p, train_p = DEBIASM_train_and_pred(
                                                 mu, ## new for C-SCRuB
                                                 X, 
@@ -92,7 +78,7 @@ class DMC_SCRuB_Classifier(BaseEstimator):
                                                 min_epochs= self.min_epochs,
                                                 l2_strength=self.l2_strength,
                                                 w_l2 = self.w_l2,
-                                                prediction_loss=self.prediction_loss
+                                                prediction_loss=self.prediction_loss, 
                                                 )
         
         self.x_train=X
@@ -109,22 +95,32 @@ class DMC_SCRuB_Classifier(BaseEstimator):
         
         return self
     
+    def c_scrub_transform(self, self_model, x, p):
+        batch_inds, x = x[:, 0], x[:, 1:]
+
+        x = F.normalize( torch.pow(2, self_model.batch_weights[batch_inds.long()] ) * x, p=1 )
+
+
+        x -= ( torch.cat([ self_model.C_SCRuB_Layers[str(batch)].gamma.unsqueeze(0)
+                                                     for batch in batch_inds.long() ], 
+                                    dim=0 ) * ( 1 - p ) )
+
+        x = F.normalize( F.relu(x), p=1 )
+        return(x)
     
     def transform(self):
         if self.model is None:
             raise(ValueError('You must run the `.fit()` method before executing this transformation'))
             
-        return({'Train_X': c_scrub_transform(torch.tensor(self.x_train), self.train_p), 
-                'Test_X': c_scrub_transform(torch.tensor(self.x_val), self.val_p)
+        return({'Train_X': self.c_scrub_transform(self.model, torch.tensor(self.x_train), self.train_p), 
+                'Test_X': self.c_scrub_transform(self.model, torch.tensor(self.x_val), self.val_p)
                })
 
-    def predict(self, X, mu):
-        """Perform classification on test vectors X.
+    def predict(self):
+        """Perform classification on test vectors x_val.
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-            Test data.
 
         Returns
         -------
@@ -135,7 +131,7 @@ class DMC_SCRuB_Classifier(BaseEstimator):
         return(self.val_preds>0.5)
     
 
-    def predict_proba(self):#, X, mu):
+    def predict_proba(self):
         """
         Return probability estimates for the test vectors x_val.
 
