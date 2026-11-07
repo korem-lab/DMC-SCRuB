@@ -22,6 +22,7 @@ batches = np.array([i//96 for i in range(X.shape[0])])[:, np.newaxis]
 X_with_batch = np.hstack([batches, X ])
 y = np.random.rand(n_samples)>0.5
 
+# DMC-SCRuB Example
 
 test_inds = X_with_batch[:, 0]==3
 dmcscr = dmc_scrub.DMC_SCRuB_Classifier(x_val=X_with_batch[test_inds],
@@ -40,7 +41,8 @@ transformed = dmcscr.transform()
     # transformed['Train_X']
     # transformed['Test_X']
     
-    
+# C-SCRuB Example (single batch)
+
 cscr = dmc_scrub.C_SCRuB()
 cscr_out = cscr.fit_transform(
                       X[X_with_batch[:, 0]==3], 
