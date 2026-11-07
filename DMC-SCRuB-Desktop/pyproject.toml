@@ -1,0 +1,45 @@
+[project]
+name = "dmcscrub-app"
+version = "0.1.0"
+description = "PySide6 desktop app for C-SCRuB and DMC-SCRuB"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyside6",
+    "scipy",
+    "scikit-learn",
+    "torch",
+    "torchsort",
+]
+
+[project.scripts]
+dmcscrub-app = "dmcscrub_app.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# UI assets are loaded through importlib.resources.
+dmcscrub_app = [
+    "backend/vendor/C_scrub_methods/*/LICENSE",
+    "backend/vendor/C_scrub_methods/*/README.md",
+    "resources/*.qss",
+    "resources/*.svg",
+    "resources/*.png",
+    "resources/*.jpg",
+    "resources/*.jpeg",
+    "resources/*.webp",
+    "resources/*.md",
+]
+
+[tool.ruff]
+# Vendored scientific implementations are kept unchanged.
+extend-exclude = ["src/dmcscrub_app/backend/vendor"]
+
+[tool.black]
+extend-exclude = "src/dmcscrub_app/backend/vendor"
