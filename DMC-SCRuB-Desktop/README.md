@@ -9,6 +9,7 @@ Requires Python 3.10 or newer.
 
 ```bash
 git clone <repository-url>
+git switch DMC-SCRuB-Desktop
 cd DMC-SCRuB-Desktop
 python -m pip install .
 ```
