@@ -29,7 +29,22 @@ def check_dmcscrub_inputs(
     )
     if checked.hard_errors or checked.batches is None:
         return checked
-    for batch in checked.batches.drop_duplicates():
+    unique_batches = checked.batches.drop_duplicates().tolist()
+    if len(unique_batches) < 2:
+        checked.hard_errors.append(
+            "DMC-SCRuB needs at least two batches so one can be held out for testing."
+        )
+        return checked
+
+    test_batch = unique_batches[-1]
+    training_count = int(checked.batches.ne(test_batch).sum())
+    if training_count < 10:
+        checked.hard_errors.append(
+            "DMC-SCRuB needs at least 10 training samples outside the held-out "
+            f"test batch {test_batch!r}."
+        )
+
+    for batch in unique_batches:
         in_batch = checked.batches.eq(batch)
         sample_count = int(in_batch.sum())
         if sample_count < 2:

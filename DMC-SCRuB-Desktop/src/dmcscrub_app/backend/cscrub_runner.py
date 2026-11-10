@@ -17,9 +17,7 @@ from dmcscrub_app.backend.contracts import (
     EventSink,
 )
 from dmcscrub_app.backend.cscrub_checker import check_cscrub_inputs
-from dmcscrub_app.backend.vendor.C_scrub_methods.C_SCRuB.c_scrub.main import (
-    C_SCRuB,
-)
+from dmcscrub_app.backend.vendor.dmc_scrub import C_SCRuB
 from dmcscrub_app.core.validation import InputValidationError
 
 

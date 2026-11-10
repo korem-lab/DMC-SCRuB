@@ -6,6 +6,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import torch
 
 from dmcscrub_app.backend.concentration_outputs import write_concentration_outputs
 from dmcscrub_app.backend.contracts import (
@@ -17,10 +18,10 @@ from dmcscrub_app.backend.contracts import (
     EventSink,
 )
 from dmcscrub_app.backend.dmcscrub_checker import check_dmcscrub_inputs
-from dmcscrub_app.backend.vendor.C_scrub_methods.DMC_SCRuB.c_scrub.base_c_SCRuB_fns import (
-    fit_transform,
-)
+from dmcscrub_app.backend.vendor.dmc_scrub import DMC_SCRuB_Classifier
 from dmcscrub_app.core.validation import InputValidationError
+
+RANDOM_SEED = 123
 
 
 def run_dmcscrub(
@@ -44,7 +45,6 @@ def run_dmcscrub(
     for warning in checked.repairable_issues:
         events.warning(warning)
 
-    events.stage(STAGE_FITTING)
     assert checked.batches is not None
     batch_codes, batch_labels = pd.factorize(checked.batches, sort=False)
     batch_mapping = {
@@ -56,12 +56,48 @@ def run_dmcscrub(
         + ", ".join(f"{label}={code}" for label, code in batch_mapping.items())
     )
     events.notice(checked.notices[-1])
-    raw_result = fit_transform(
-        checked.counts.to_numpy(dtype=float),
-        checked.concentrations.to_numpy(dtype=float),
-        batch_codes.astype(np.int64),
+
+    sample_matrix = checked.counts.to_numpy(dtype=float)
+    concentration = checked.concentrations.to_numpy(dtype=float)
+    x_with_batch = np.column_stack([batch_codes.astype(float), sample_matrix])
+
+    test_batch_code = len(batch_labels) - 1
+    test_mask = batch_codes == test_batch_code
+    train_mask = ~test_mask
+    labels = _random_binary_labels(sample_matrix.shape[0], train_mask)
+
+    test_batch = str(batch_labels[test_batch_code])
+    notice = (
+        f"Experimental random-label DMC-SCRuB run: seed={RANDOM_SEED}, "
+        f"held-out test batch={test_batch!r}."
     )
+    checked.notices.append(notice)
+    events.notice(notice)
+
+    events.stage(STAGE_FITTING)
+    np.random.seed(RANDOM_SEED)
+    torch.manual_seed(RANDOM_SEED)
+    model = DMC_SCRuB_Classifier(
+        x_val=x_with_batch[test_mask],
+        mu_val=concentration[test_mask],
+        random_state=RANDOM_SEED,
+    )
+    model.fit(
+        x_with_batch[train_mask],
+        labels[train_mask],
+        concentration[train_mask],
+    )
+    transformed = model.transform()
+    raw_result = np.empty_like(sample_matrix, dtype=float)
+    raw_result[train_mask] = _to_numpy(transformed["Train_X"])
+    raw_result[test_mask] = _to_numpy(transformed["Test_X"])
     result = _result_frame(raw_result, checked.counts)
+
+    predictions = pd.Series(
+        np.asarray(model.predict_proba(), dtype=float),
+        index=checked.counts.index[test_mask],
+        name="prediction_probability",
+    )
 
     events.stage(STAGE_SAVING)
     manifest_path = write_concentration_outputs(
@@ -70,6 +106,14 @@ def run_dmcscrub(
         result,
         created_at=created_at,
         batch_mapping=batch_mapping,
+        prediction_probabilities=predictions,
+        parameters={
+            "method": "DMC_SCRuB_Classifier",
+            "label_strategy": "random_binary",
+            "random_seed": RANDOM_SEED,
+            "test_batch": test_batch,
+            "test_batch_code": test_batch_code,
+        },
     )
     return BackendRunResult(run_dir=request.run_dir, manifest_path=manifest_path)
 
@@ -82,6 +126,29 @@ def _require_runnable(checked, repair_invalid: bool) -> None:
             "Input contains repairable problems. Confirm Run Anyway to replace "
             "invalid numeric cells with 0."
         )
+
+
+def _random_binary_labels(sample_count: int, train_mask: np.ndarray) -> np.ndarray:
+    """Generate one reproducible temporary label vector for the whole run."""
+    rng = np.random.default_rng(RANDOM_SEED)
+    labels = (rng.random(sample_count) > 0.5).astype(float)
+    train_indices = np.flatnonzero(train_mask)
+    if train_indices.size < 2:
+        raise InputValidationError(
+            "DMC-SCRuB needs at least two training samples outside the test batch."
+        )
+    if np.unique(labels[train_mask]).size < 2:
+        labels[train_indices[0]] = 0.0
+        labels[train_indices[1]] = 1.0
+    return labels
+
+
+def _to_numpy(value) -> np.ndarray:
+    if hasattr(value, "detach"):
+        value = value.detach()
+    if hasattr(value, "cpu"):
+        value = value.cpu()
+    return np.asarray(value.numpy() if hasattr(value, "numpy") else value, dtype=float)
 
 
 def _result_frame(raw_result, template: pd.DataFrame) -> pd.DataFrame:

@@ -22,7 +22,7 @@ from torch.optim.optimizer import Optimizer
 from torchmetrics.functional import accuracy
 
 
-from data_loading import SklearnDataModule
+from .data_loading import SklearnDataModule
 
 
 from argparse import ArgumentParser
@@ -76,7 +76,7 @@ class NN_C_SCRuB(nn.Module):
         super().__init__()
 
         S,N = X.shape
-
+        
         self.logit_p = nn.Parameter( torch.logit( torch.rand(S)) )
         
         ## initializatio scheme
@@ -137,11 +137,14 @@ def initiate_per_batch_C_SCRuB_Object(X, mu):
         mu_rank = torch.Tensor(pd.Series(mu).rank().values)
         mu_rank = mu_rank - mu_rank.mean()
         mu_rank = ( mu_rank / mu_rank.norm() )[None, :]
+        
     
     ## initialize model object, optimizer
     CS = NN_C_SCRuB(X, X_mu_corrs)
+    
     CS.rank_mu = mu_rank
     CS.corr_X=X_mu_corrs
+    
     return(CS)
 
 
@@ -184,6 +187,7 @@ class PL_C_SCRuB_DEBIASM(pl.LightningModule):
         self.save_hyperparameters()
         self.optimizer = optimizer
         
+#         1+'b'
         
         self.linear = nn.Linear(in_features=self.hparams.input_dim, 
                                 out_features=self.hparams.num_classes, 
@@ -207,9 +211,10 @@ class PL_C_SCRuB_DEBIASM(pl.LightningModule):
         for batch in self.unique_bs:
             inds = self.bs==batch
             
+            
             self.C_SCRuB_Layers[str(batch)] = initiate_per_batch_C_SCRuB_Object(self.X[inds], 
-                                                                           mu[inds]
-                                                                           )
+                                                                                mu[inds]
+                                                                                )
             
             self.C_SCRuB_Layers[str(batch)].overall_dataset_inds = self.indices[inds]
         
@@ -422,13 +427,10 @@ def DEBIASM_train_and_pred(mu,
                            includes_batches=False,
                            val_split=0.1, 
                            test_split=0,
-                           min_epochs=15, 
+                           min_epochs=50, 
                            verbose=False, 
                            prediction_loss=F.cross_entropy
                            ):
-    
-    min_epochs=50
-    
     
     
     x_tr_cnts = pd.Series(X_train[:, 0]).value_counts()
@@ -452,9 +454,11 @@ def DEBIASM_train_and_pred(mu,
     
     best_val_loss = 1e9
     for n_model_iters in range(3):
-        model = PL_C_SCRuB_DEBIASM(X = torch.tensor( np.vstack((X_train, X_val))), 
+        
+        model = PL_C_SCRuB_DEBIASM(
+                           X = torch.tensor( np.vstack((X_train, X_val))), 
                            mu = torch.tensor( np.hstack( (mu, mu_val) ) ),
-                           indices= torch.tensor(indices_all).long(),
+                           indices= torch.tensor( indices_all ).long(),
                            batch_sim_strength = batch_sim_strength,
                            input_dim = X_train.shape[1]-1, 
                            num_classes = 2, 
@@ -464,7 +468,7 @@ def DEBIASM_train_and_pred(mu,
                            w_l2 = w_l2, 
                            prediction_loss=prediction_loss
                            )
-
+        
 
         ## initialize parameters to lbe similar to standard logistic regression
         model.linear.weight.data[0]=-torch.tensor( baseline_mod.coef_[0] )
@@ -518,8 +522,6 @@ def DEBIASM_train_and_pred(mu,
                               )[:, 1].detach().numpy()
 
     ## return predictions and the model
-#     return( val_preds, model )
-
 
     val_p = p[ indices_all[X_train.shape[0]:] ]
     train_p = p[ indices_all[: X_train.shape[0]] ]

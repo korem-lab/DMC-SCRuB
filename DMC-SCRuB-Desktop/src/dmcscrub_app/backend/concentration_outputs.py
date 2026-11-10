@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -31,6 +32,8 @@ def write_concentration_outputs(
     *,
     created_at: datetime,
     batch_mapping: dict[str, int] | None = None,
+    prediction_probabilities: pd.Series | None = None,
+    parameters: dict[str, Any] | None = None,
 ) -> Path:
     run_dir = request.run_dir
     (run_dir / paths.RUN_DETAILS_DIR).mkdir(parents=True, exist_ok=True)
@@ -39,6 +42,18 @@ def write_concentration_outputs(
     relative = result.copy()
     relative.index.name = id_column
     relative.to_csv(run_dir / paths.RELATIVE_ABUNDANCE, float_format=FLOAT_FORMAT)
+
+    outputs = {
+        "decontaminated_relative_abundance": paths.RELATIVE_ABUNDANCE,
+    }
+    if prediction_probabilities is not None:
+        predictions = prediction_probabilities.copy()
+        predictions.index.name = id_column
+        predictions.to_csv(
+            run_dir / paths.PREDICTION_PROBABILITIES,
+            float_format=FLOAT_FORMAT,
+        )
+        outputs["prediction_probabilities"] = paths.PREDICTION_PROBABILITIES
 
     finished_at = datetime.now()
     payload = manifest.base_payload(
@@ -56,7 +71,7 @@ def write_concentration_outputs(
             "duration_seconds": round((finished_at - created_at).total_seconds(), 1),
             "app_version": _app_version(),
             "column_mapping": asdict(request.column_mapping),
-            "parameters": {"method": "fit_transform"},
+            "parameters": dict(parameters or {"method": "fit_transform"}),
             "counts": {
                 "samples": result.shape[0],
                 "taxa": result.shape[1],
@@ -71,9 +86,7 @@ def write_concentration_outputs(
                 "metadata": list(checked.metadata_matrix.shape),
                 "result": list(result.shape),
             },
-            "outputs": {
-                "decontaminated_relative_abundance": paths.RELATIVE_ABUNDANCE,
-            },
+            "outputs": outputs,
         }
     )
     return manifest.write_manifest(run_dir, payload)

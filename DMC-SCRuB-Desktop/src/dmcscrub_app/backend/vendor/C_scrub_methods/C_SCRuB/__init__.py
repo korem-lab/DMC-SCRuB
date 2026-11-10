@@ -1,1 +1,0 @@
-"""Vendored C-SCRuB implementation."""

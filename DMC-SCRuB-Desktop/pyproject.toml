@@ -1,16 +1,24 @@
 [project]
 name = "dmcscrub-app"
-version = "0.1.0"
+version = "0.1.1"
 description = "PySide6 desktop app for C-SCRuB and DMC-SCRuB"
+authors = [
+    { name = "Guanlin Chen", email = "gc3257@cumc.columbia.edu" },
+    { name = "George I. Austin", email = "gia2105@columbia.edu" },
+]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy",
+    "numpy<2",
     "pandas",
     "pyside6",
+    "pytorch-lightning>=1.8,<2.0",
     "scipy",
     "scikit-learn",
+    "setuptools<81",
     "torch",
+    "torchmetrics<1.0",
     "torchsort",
+    "lightning-utilities",
 ]
 
 [project.scripts]
@@ -26,8 +34,8 @@ where = ["src"]
 [tool.setuptools.package-data]
 # UI assets are loaded through importlib.resources.
 dmcscrub_app = [
-    "backend/vendor/C_scrub_methods/*/LICENSE",
-    "backend/vendor/C_scrub_methods/*/README.md",
+    "backend/vendor/dmc_scrub/LICENSE",
+    "backend/vendor/dmc_scrub/README.md",
     "resources/*.qss",
     "resources/*.svg",
     "resources/*.png",

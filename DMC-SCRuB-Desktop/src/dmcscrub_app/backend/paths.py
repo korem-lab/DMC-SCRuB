@@ -26,10 +26,12 @@ BACKEND_STDOUT = f"{RUN_DETAILS_DIR}/backend_stdout.log"
 BACKEND_EVENTS = f"{RUN_DETAILS_DIR}/backend_events.jsonl"
 
 RELATIVE_ABUNDANCE = "decontaminated_relative_abundance.csv"
+PREDICTION_PROBABILITIES = "prediction_probabilities.csv"
 
 # Menu order for the download entries, label -> filename.
 DOWNLOAD_ITEMS: tuple[tuple[str, str], ...] = (
     ("Decontaminated relative abundance", RELATIVE_ABUNDANCE),
+    ("Prediction probabilities", PREDICTION_PROBABILITIES),
 )
 
 _SLUG_ALLOWED = re.compile(r"[^A-Za-z0-9._-]+")
