@@ -11,7 +11,7 @@ setup(
     author='George I. Austin', 
     author_email='gia2105@columbia.edu', 
     url='https://github.com/korem-lab/DMC-SCRuB',
-    packages=['dmc_scrub','dmc_scrub.c_scrub','dmc_scrub.dmc_scrub'],
+    packages=find_packages(),
     include_package_data=True,
     install_requires=['numpy', 
                       'scikit-learn', 
