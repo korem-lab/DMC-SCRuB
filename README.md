@@ -8,7 +8,7 @@ Requires Python 3.10 or newer.
 ## Install
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/korem-lab/DMC-SCRuB.git
 cd DMC-SCRuB
 git switch DMC-SCRuB-Desktop
 cd DMC-SCRuB-Desktop

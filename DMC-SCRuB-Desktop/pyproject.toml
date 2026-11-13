@@ -1,6 +1,6 @@
 [project]
 name = "dmcscrub-app"
-version = "0.1.1"
+version = "0.2.0"
 description = "PySide6 desktop app for C-SCRuB and DMC-SCRuB"
 authors = [
     { name = "Guanlin Chen", email = "gc3257@cumc.columbia.edu" },
