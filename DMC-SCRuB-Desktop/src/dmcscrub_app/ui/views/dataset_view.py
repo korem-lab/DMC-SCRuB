@@ -331,6 +331,8 @@ class DatasetView(QWidget):
                 sample_column=config.mapping.sample,
                 concentration_column=config.mapping.concentration,
                 batch_column=config.mapping.batch,
+                label_column=config.mapping.label,
+                positive_value=config.mapping.positive_value,
             )
 
         if checked.hard_errors:
@@ -397,6 +399,8 @@ class DatasetView(QWidget):
                 sample_name=config.mapping.sample,
                 concentration=config.mapping.concentration,
                 batch=config.mapping.batch,
+                label=config.mapping.label,
+                positive_value=config.mapping.positive_value,
             ),
             run_dir=run_dir,
             algorithm=config.algorithm,

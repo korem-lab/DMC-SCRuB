@@ -21,6 +21,7 @@ class ConcentrationCheckResult:
     )
     concentrations: pd.Series = field(default_factory=lambda: pd.Series(dtype=float))
     batches: pd.Series | None = None
+    labels: pd.Series | None = None
     hard_errors: list[str] = field(default_factory=list)
     repairable_issues: list[str] = field(default_factory=list)
     notices: list[str] = field(default_factory=list)
@@ -38,14 +39,23 @@ def check_concentration_inputs(
     sample_column: str,
     concentration_column: str,
     batch_column: str | None,
+    label_column: str | None = None,
+    positive_value: str | None = None,
     repair: bool,
 ) -> ConcentrationCheckResult:
     result = ConcentrationCheckResult()
     selected = [sample_column, concentration_column]
     if batch_column:
         selected.append(batch_column)
+    if label_column:
+        selected.append(label_column)
     if any(not column for column in selected):
         result.hard_errors.append("Every required metadata column must be selected.")
+        return result
+    if label_column and not positive_value:
+        result.hard_errors.append(
+            "A positive value must be selected for the DMC-SCRuB label column."
+        )
         return result
     if len(set(selected)) != len(selected):
         result.hard_errors.append("Selected metadata columns must be different.")
@@ -142,6 +152,19 @@ def check_concentration_inputs(
                 )
             normalized = normalized.mask(invalid_batch, "0")
         result.batches = normalized
+
+    if label_column:
+        selected_value = str(positive_value).strip()
+        label_values = metadata[label_column]
+        normalized_labels = label_values.astype(str).str.strip()
+        present_values = label_values.dropna().astype(str).str.strip()
+        if not present_values.eq(selected_value).any():
+            result.hard_errors.append(
+                f"The selected positive value {selected_value!r} is not present "
+                f"in label column {label_column!r}."
+            )
+        else:
+            result.labels = normalized_labels.eq(selected_value).astype(float)
 
     zero_rows = result.counts.sum(axis=1).eq(0)
     if zero_rows.all() and not zero_rows.empty:

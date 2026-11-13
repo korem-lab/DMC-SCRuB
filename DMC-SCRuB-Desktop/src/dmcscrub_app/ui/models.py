@@ -26,6 +26,8 @@ class ColumnMapping:
     sample: str
     concentration: str = ""
     batch: str = ""
+    label: str = ""
+    positive_value: str = ""
 
 
 @dataclass(frozen=True)

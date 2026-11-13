@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 ALGORITHM_C_SCRUB = "C-SCRuB"
 ALGORITHM_DMC_SCRUB = "DMC-SCRuB"
@@ -30,6 +30,8 @@ class ColumnMapping:
     sample_name: str
     concentration: str = ""
     batch: str = ""
+    label: str = ""
+    positive_value: str = ""
 
 
 @dataclass(frozen=True)

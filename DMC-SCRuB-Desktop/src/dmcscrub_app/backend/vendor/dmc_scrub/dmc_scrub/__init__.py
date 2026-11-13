@@ -1,1 +1,0 @@
-from .main import DMC_SCRuB_Classifier

@@ -1,7 +1,7 @@
-# C-SCRuB Tutorial
+# C-SCRuB and DMC-SCRuB Tutorial
 
-This guide explains how to prepare input files, run C-SCRuB, download the
-result, and review previous runs.
+This guide explains how to prepare input files, run C-SCRuB or DMC-SCRuB,
+download the results, and review previous runs.
 
 ## Preparation
 
@@ -34,16 +34,24 @@ The metadata must contain:
 - A **concentration column** containing a non-negative numeric concentration
   for each sample.
 
+DMC-SCRuB also requires:
+
+- A **batch column** identifying the experimental batch of each sample.
+- A **label column** containing the outcome to predict.
+- One **positive value** from the label column. The selected value is treated
+  as `1`; all other values are treated as `0`.
+
 You may use any column names. You will select the correct columns when loading
 the dataset.
 
 Sample names must be unique and non-empty. C-SCRuB requires at least two
-samples and at least two distinct concentration values.
+samples and two distinct concentration values. DMC-SCRuB requires at least two
+batches and both positive and negative training samples.
 
-### 2: Load a C-SCRuB Dataset
+### 2: Load a Dataset
 
 Select **Upload** in the top toolbar or select the **+** beside the tabs, then
-choose **C-SCRuB**.
+choose **C-SCRuB** or **DMC-SCRuB**.
 
 Select the Count Table and Metadata Table. Give the dataset a name.
 
@@ -51,23 +59,26 @@ In **Column Mapping**, select:
 
 - The metadata column containing sample names.
 - The metadata column containing concentration values.
+- For DMC-SCRuB, the batch column and label column.
+- For DMC-SCRuB, the label value that should be treated as positive.
 
-The two selections must use different columns.
+Each selected metadata column must be different.
 
 Select **Open Dataset**.
 
 ---
 
-## Run C-SCRuB
+## Run the Software
 
 ### 3: Understand the Workspace
 
 The workspace has three main areas:
 
 - **Input Summary** shows the selected files and basic dataset statistics.
-- **Workflow Diagram** shows the samples included in the C-SCRuB run.
-- **Concentration Color Table** lists each sample and its concentration. Higher
-  and lower concentrations use different colors.
+- **Workflow Diagram** shows the samples included in the run.
+- The right-side **Concentration Color Table** lists each sample and its
+  concentration. Higher and lower concentrations use different colors. The Run
+  button for the selected algorithm is at the bottom of this panel.
 
 Use **Find** in the Input Summary to locate a sample or workflow item. The
 matching route or node is highlighted in the Workflow Diagram.
@@ -80,6 +91,8 @@ Before starting, confirm that:
 - Read counts and concentration values are numeric, finite, and non-negative.
 - The dataset contains at least two samples.
 - The concentration column contains at least two distinct values.
+- For DMC-SCRuB, the batch and label selections are correct and the training
+  data contains both the positive and negative classes.
 
 If the app finds repairable cells, it shows an **Invalid Input Values** dialog.
 Select **Run Anyway** to replace those invalid values with `0`, or select
@@ -89,13 +102,17 @@ The files on disk are never modified.
 
 ### 5: Run the Analysis
 
-Select **Run C-SCRuB**.
+Select **Run C-SCRuB** or **Run DMC-SCRuB**.
+
+For DMC-SCRuB, the last batch in the aligned metadata is held out as the test
+batch. The other batches are used for training with the selected positive
+label value.
 
 The Result panel shows the current stage, elapsed time, and run notes:
 
 1. Reading the input tables.
 2. Preparing aligned inputs.
-3. Fitting C-SCRuB.
+3. Fitting the selected algorithm.
 4. Writing the result.
 
 Select **Cancel** to stop the active run. Only one analysis can run at a time,
@@ -107,10 +124,15 @@ but you can continue viewing other tabs.
 
 ### 6: Download the Result
 
-A successful C-SCRuB run produces:
+A successful C-SCRuB or DMC-SCRuB run produces:
 
 - **Decontaminated relative abundance** — Estimated taxon proportions after
   decontamination. Rows are samples and columns are taxa.
+
+DMC-SCRuB also produces:
+
+- **Prediction probabilities** — Classification probabilities for samples in
+  the held-out test batch.
 
 Select **Save file** to export the result CSV.
 

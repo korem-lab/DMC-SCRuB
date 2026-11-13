@@ -31,6 +31,14 @@ class DatasetProvider(ABC):
         """Return the column names of a metadata table (for the dropdowns)."""
 
     @abstractmethod
+    def read_metadata_values(
+        self,
+        metadata_path: Path,
+        column: str,
+    ) -> list[str]:
+        """Return unique, non-empty values from one metadata column."""
+
+    @abstractmethod
     def build_dataset(self, config: DatasetConfig) -> DatasetVM:
         """Assemble the view model shown in a dataset tab."""
 
@@ -53,6 +61,17 @@ class RealDatasetProvider(DatasetProvider):
         header = pd.read_csv(metadata_path, nrows=0)
         # First column is the index (sample id); the rest are selectable columns.
         return [str(col) for col in header.columns]
+
+    def read_metadata_values(
+        self,
+        metadata_path: Path,
+        column: str,
+    ) -> list[str]:
+        import pandas as pd
+
+        values = pd.read_csv(metadata_path, usecols=[column])[column]
+        normalized = values.dropna().astype(str).str.strip()
+        return [value for value in normalized.drop_duplicates() if value]
 
     def build_dataset(self, config: DatasetConfig) -> DatasetVM:
         if config.algorithm not in (ALGORITHM_C_SCRUB, ALGORITHM_DMC_SCRUB):
@@ -86,6 +105,8 @@ class RealDatasetProvider(DatasetProvider):
                 sample_column=config.mapping.sample,
                 concentration_column=config.mapping.concentration,
                 batch_column=config.mapping.batch,
+                label_column=config.mapping.label,
+                positive_value=config.mapping.positive_value,
                 repair=True,
             )
         if checked.hard_errors:

@@ -7,6 +7,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import torch
+from dmc_scrub import DMC_SCRuB_Classifier
 
 from dmcscrub_app.backend.concentration_outputs import write_concentration_outputs
 from dmcscrub_app.backend.contracts import (
@@ -18,10 +19,9 @@ from dmcscrub_app.backend.contracts import (
     EventSink,
 )
 from dmcscrub_app.backend.dmcscrub_checker import check_dmcscrub_inputs
-from dmcscrub_app.backend.vendor.dmc_scrub import DMC_SCRuB_Classifier
 from dmcscrub_app.core.validation import InputValidationError
 
-RANDOM_SEED = 123
+MODEL_SEED = 123
 
 
 def run_dmcscrub(
@@ -37,6 +37,8 @@ def run_dmcscrub(
         sample_column=request.column_mapping.sample_name,
         concentration_column=request.column_mapping.concentration,
         batch_column=request.column_mapping.batch,
+        label_column=request.column_mapping.label,
+        positive_value=request.column_mapping.positive_value,
         repair=request.repair_invalid,
     )
     _require_runnable(checked, request.repair_invalid)
@@ -46,6 +48,7 @@ def run_dmcscrub(
         events.warning(warning)
 
     assert checked.batches is not None
+    assert checked.labels is not None
     batch_codes, batch_labels = pd.factorize(checked.batches, sort=False)
     batch_mapping = {
         str(label): int(code)
@@ -64,23 +67,24 @@ def run_dmcscrub(
     test_batch_code = len(batch_labels) - 1
     test_mask = batch_codes == test_batch_code
     train_mask = ~test_mask
-    labels = _random_binary_labels(sample_matrix.shape[0], train_mask)
+    labels = checked.labels.to_numpy(dtype=float)
 
     test_batch = str(batch_labels[test_batch_code])
     notice = (
-        f"Experimental random-label DMC-SCRuB run: seed={RANDOM_SEED}, "
+        f"DMC-SCRuB label {request.column_mapping.label!r}: "
+        f"{request.column_mapping.positive_value!r}=1, all other values=0; "
         f"held-out test batch={test_batch!r}."
     )
     checked.notices.append(notice)
     events.notice(notice)
 
     events.stage(STAGE_FITTING)
-    np.random.seed(RANDOM_SEED)
-    torch.manual_seed(RANDOM_SEED)
+    np.random.seed(MODEL_SEED)
+    torch.manual_seed(MODEL_SEED)
     model = DMC_SCRuB_Classifier(
         x_val=x_with_batch[test_mask],
         mu_val=concentration[test_mask],
-        random_state=RANDOM_SEED,
+        random_state=MODEL_SEED,
     )
     model.fit(
         x_with_batch[train_mask],
@@ -109,8 +113,9 @@ def run_dmcscrub(
         prediction_probabilities=predictions,
         parameters={
             "method": "DMC_SCRuB_Classifier",
-            "label_strategy": "random_binary",
-            "random_seed": RANDOM_SEED,
+            "label_column": request.column_mapping.label,
+            "positive_value": request.column_mapping.positive_value,
+            "model_seed": MODEL_SEED,
             "test_batch": test_batch,
             "test_batch_code": test_batch_code,
         },
@@ -126,22 +131,6 @@ def _require_runnable(checked, repair_invalid: bool) -> None:
             "Input contains repairable problems. Confirm Run Anyway to replace "
             "invalid numeric cells with 0."
         )
-
-
-def _random_binary_labels(sample_count: int, train_mask: np.ndarray) -> np.ndarray:
-    """Generate one reproducible temporary label vector for the whole run."""
-    rng = np.random.default_rng(RANDOM_SEED)
-    labels = (rng.random(sample_count) > 0.5).astype(float)
-    train_indices = np.flatnonzero(train_mask)
-    if train_indices.size < 2:
-        raise InputValidationError(
-            "DMC-SCRuB needs at least two training samples outside the test batch."
-        )
-    if np.unique(labels[train_mask]).size < 2:
-        labels[train_indices[0]] = 0.0
-        labels[train_indices[1]] = 1.0
-    return labels
-
 
 def _to_numpy(value) -> np.ndarray:
     if hasattr(value, "detach"):

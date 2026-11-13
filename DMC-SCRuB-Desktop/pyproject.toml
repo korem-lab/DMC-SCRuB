@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+    "DMC-SCRuB @ git+https://github.com/korem-lab/DMC-SCRuB.git",
     "numpy<2",
     "pandas",
     "pyside6",
@@ -34,8 +35,6 @@ where = ["src"]
 [tool.setuptools.package-data]
 # UI assets are loaded through importlib.resources.
 dmcscrub_app = [
-    "backend/vendor/dmc_scrub/LICENSE",
-    "backend/vendor/dmc_scrub/README.md",
     "resources/*.qss",
     "resources/*.svg",
     "resources/*.png",
@@ -44,10 +43,3 @@ dmcscrub_app = [
     "resources/*.webp",
     "resources/*.md",
 ]
-
-[tool.ruff]
-# Vendored scientific implementations are kept unchanged.
-extend-exclude = ["src/dmcscrub_app/backend/vendor"]
-
-[tool.black]
-extend-exclude = "src/dmcscrub_app/backend/vendor"
