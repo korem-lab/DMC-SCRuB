@@ -6,6 +6,8 @@
 pip install git+https://github.com/korem-lab/DMC-SCRuB.git
 ```
 
+# Graphical User Interface
+Please see the `DMC-SCRuB-Desktop` branch to use the Graphical user interface.
 
 
 # Example
