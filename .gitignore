@@ -1,0 +1,36 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build / packaging outputs
+build/
+dist/
+.buildenv/
+*.egg-info/
+tmp*/
+DMC-SCRuB-Desktop/packaging/icon.icns
+DMC-SCRuB-Desktop/packaging/icon.ico
+DMC-SCRuB-Desktop/packaging/icon.iconset/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter / editor
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# Local run outputs
+runs/
+*.log

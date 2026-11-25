@@ -1,0 +1,23 @@
+# Reproducible macOS arm64 build environment for macOS 12.0+.
+# The app's package metadata remains in pyproject.toml; this file pins the exact
+# versions copied into the standalone .app bundle.
+#
+# These pins use wheels/binaries with macosx_11_0 / macosx_12_0 tags so the
+# packaged app can run on macOS 12. Newer torch/PySide/scipy wheels require 14+.
+
+setuptools==80.10.2
+wheel==0.48.0
+
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.13.1
+scikit-learn==1.5.2
+torch==2.4.1
+torchsort==0.1.10
+
+pytorch-lightning==1.9.5
+torchmetrics==0.11.4
+lightning-utilities==0.15.3
+
+pyside6-essentials==6.7.3
+pyinstaller==6.21.0

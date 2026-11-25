@@ -1,0 +1,46 @@
+[project]
+name = "cscrub-desktop"
+version = "0.3.0"
+description = "C-SCRuB Desktop app for C-SCRuB and DMC-SCRuB"
+authors = [
+    { name = "Guanlin Chen", email = "gc3257@cumc.columbia.edu" },
+    { name = "George I. Austin", email = "gia2105@columbia.edu" },
+]
+requires-python = ">=3.10"
+dependencies = [
+    "DMC-SCRuB @ git+https://github.com/korem-lab/DMC-SCRuB.git",
+    # Pinned for macOS 12.0-compatible wheels (newer torch/PySide/scipy need 14+).
+    "numpy==1.26.4",
+    "pandas==2.2.3",
+    "pyside6-essentials==6.7.3",
+    "pytorch-lightning>=1.8,<2.0",
+    "scipy==1.13.1",
+    "scikit-learn==1.5.2",
+    "setuptools<81",
+    "torch==2.4.1",
+    "torchmetrics<1.0",
+    "torchsort==0.1.10",
+    "lightning-utilities",
+]
+
+[project.scripts]
+cscrub-desktop = "dmcscrub_app.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# UI assets are loaded through importlib.resources.
+dmcscrub_app = [
+    "resources/*.qss",
+    "resources/*.svg",
+    "resources/*.png",
+    "resources/*.jpg",
+    "resources/*.jpeg",
+    "resources/*.webp",
+    "resources/*.md",
+]

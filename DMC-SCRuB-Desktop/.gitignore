@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build outputs
+build/
+dist/
+.buildenv/
+*.egg-info/
+tmp*/
+packaging/icon.icns
+packaging/icon.ico
+packaging/icon.iconset/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Local run outputs and research validation
+runs/
+validation/
+
+# Local planning / design docs, never committed
+planning/
+
+# Local logs
+*.log
