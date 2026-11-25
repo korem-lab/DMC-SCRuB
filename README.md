@@ -11,7 +11,7 @@ Requires Python 3.10 or newer. The macOS app build targets macOS 12.0 or newer
 ```bash
 git clone https://github.com/korem-lab/DMC-SCRuB.git
 cd DMC-SCRuB
-git switch dmc-scrub-desktop-12.0
+git switch dmc-scrub-desktop
 cd DMC-SCRuB-Desktop
 python -m pip install .
 ```
